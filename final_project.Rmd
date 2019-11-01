@@ -1,0 +1,55 @@
+---
+title: "Final Project"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+beds <- read_csv("~/Desktop/2012beds.csv")
+beds <- na.omit(beds)
+GDPpc <- as.numeric(beds$GDPpc)
+beds$Beds <- beds$Beds * 10000
+Beds <- as.numeric(beds$Beds)
+ln_Beds <- log(Beds)
+ln_GDPpc <- log(GDPpc)
+beds$ln_Beds <- ln_Beds
+beds$ln_GDPpc <- ln_GDPpc
+summary(beds)
+```
+```{r}
+reg_1 <- lm(beds$ln_GDPpc ~ beds$ln_Beds + beds$Pop)
+summary(reg_1)
+```
+
+```{r}
+library(AER)
+iv <- ivreg(ln_GDPpc ~ beds$ln_Beds + beds$Pop, ~ beds$Lagged_Beds + beds$Pop)
+summary(iv)
+```
+```{r}
+dummy <-  lm(beds$ln_GDPpc ~ beds$ln_Beds + beds$Pop + beds$Poorer + (beds$ln_Beds):(beds$Poorer))
+summary(dummy)
+```
+
+
+```{r}
+iv_dummy <- ivreg(beds$ln_GDPpc ~ beds$ln_Beds + beds$Pop + beds$Poorer + (beds$ln_Beds):(beds$Poorer), ~ beds$Lagged_Beds + beds$Pop + beds$Poorer + (beds$ln_Beds):(beds$Poorer))
+summary(iv_dummy)
+```
+```{r}
+library(stargazer)
+stargazer(reg_1,iv,dummy, iv_dummy,title="Regression Results",type="text", out="new1.html")
+```
+
+```{r}
+bptest(iv_dummy)
+beds$resi <- iv_dummy$residuals
+library(lmtest)
+library(sandwich)
+coeftest(iv_dummy, vcov = vcovHC(iv_dummy, "HC1"))
+```
+
